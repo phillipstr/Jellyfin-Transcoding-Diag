@@ -1,0 +1,6 @@
+[2026-01-05 20:01:00.101 +00:00] [INF] [12] Jellyfin.Api.Controllers.DynamicHlsController: Current HLS implementation doesn't support non-keyframe breaks but one is requested, ignoring that request
+[2026-01-05 20:02:40.512 +00:00] [INF] [31] MediaBrowser.MediaEncoding.Transcoding.TranscodeManager: FFmpeg exited with code 0
+[2026-01-05 20:03:05.220 +00:00] [ERR] [44] MediaBrowser.MediaEncoding.Transcoding.TranscodeManager: FFmpeg exited with code 218
+[2026-01-05 20:04:05.873 +00:00] [ERR] [45] MediaBrowser.MediaEncoding.Transcoding.TranscodeManager: FFmpeg exited with code 218
+[2026-01-05 20:05:01.004 +00:00] [ERR] [47] MediaBrowser.MediaEncoding.Transcoding.TranscodeManager: FFmpeg exited with code 234
+[2026-01-05 20:11:12.310 +00:00] [ERR] [52] MediaBrowser.MediaEncoding.Transcoding.TranscodeManager: FFmpeg exited with code 1

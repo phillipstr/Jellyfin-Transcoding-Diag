@@ -1,0 +1,34 @@
+{"Protocol":"File","Id":"0123456789abcdef0123456789abcdef","Path":"/media/movies/Sample Movie (2020)/Sample Movie (2020).mkv","Type":"Default","Container":"mkv","Size":1234567890,"Name":"Sample Movie (2020)","IsRemote":false,"RunTimeTicks":26000000000,"SupportsTranscoding":true,"MediaStreams":[{"Codec":"h264","Profile":"High","BitDepth":8,"PixelFormat":"yuv420p","Width":1920,"Height":1080,"Type":"Video","Index":0,"IsDefault":true},{"Codec":"eac3","Channels":6,"Type":"Audio","Index":1,"Language":"eng"},{"Codec":"ass","Type":"Subtitle","Index":2,"Language":"eng","IsExternal":false}],"Bitrate":8000000,"DefaultAudioStreamIndex":1,"DefaultSubtitleStreamIndex":2}
+
+/usr/lib/jellyfin-ffmpeg/ffmpeg -analyzeduration 200M -probesize 1G -init_hw_device vaapi=va:/dev/dri/renderD128,driver=iHD -init_hw_device qsv=qs@va -filter_hw_device qs -noautorotate -canvas_size 1920x1080 -i file:"/media/movies/Sample Movie (2020)/Sample Movie (2020).mkv" -map_metadata -1 -map_chapters -1 -threads 0 -map 0:0 -map 0:1 -map -0:0 -codec:v:0 h264_qsv -preset veryfast -b:v 8000000 -maxrate 8000000 -bufsize 16000000 -g:v:0 72 -keyint_min:v:0 72 -filter_complex "[0:2]scale=s=1920x1080,subtitles=f='/media/movies/Sample Movie (2020)/Sample Movie (2020).mkv':si=0:alpha=1:sub2video=1,hwupload=derive_device=qsv:extra_hw_frames=64[sub];[0:0]format=nv12,hwupload=extra_hw_frames=64,format=qsv[main];[main][sub]overlay_qsv=eof_action=pass:repeatlast=0" -codec:a:0 libfdk_aac -ac 2 -ab 256000 -ar 48000 -copyts -avoid_negative_ts disabled -max_muxing_queue_size 2048 -f hls -max_delay 5000000 -hls_time 3 -hls_segment_type fmp4 -start_number 0 -hls_segment_filename "/var/lib/jellyfin/transcodes/09c0ffee09deadbeef09cafebabe09f0%d.mp4" -hls_playlist_type vod -hls_list_size 0 -y "/var/lib/jellyfin/transcodes/09c0ffee09deadbeef09cafebabe09f0.m3u8"
+
+ffmpeg version 7.0.2-Jellyfin Copyright (c) 2000-2024 the FFmpeg developers
+  built with gcc 12 (Debian 12.2.0-14)
+  configuration: --prefix=/usr/lib/jellyfin-ffmpeg --target-os=linux --extra-version=Jellyfin --disable-doc --disable-ffplay --enable-gpl --enable-libass --enable-libfdk-aac --enable-vaapi --enable-libvpl --enable-opencl
+  libavutil      59.  8.100 / 59.  8.100
+  libavcodec     61.  3.100 / 61.  3.100
+  libavformat    61.  1.100 / 61.  1.100
+  libavfilter    10.  1.100 / 10.  1.100
+Input #0, matroska,webm, from 'file:/media/movies/Sample Movie (2020)/Sample Movie (2020).mkv':
+  Metadata:
+    encoder         : libebml v1.4.2 + libmatroska v1.6.4
+  Duration: 00:43:20.02, start: 0.000000, bitrate: 8000 kb/s
+  Stream #0:0: Video: h264 (High), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps, 23.98 tbr, 1k tbn (default)
+      Metadata:
+        DURATION        : 00:43:20.013000000
+  Stream #0:1(eng): Audio: eac3, 48000 Hz, 5.1(side), fltp, 640 kb/s (default)
+  Stream #0:2(eng): Subtitle: ass (ssa) (default)
+Stream mapping:
+  Stream #0:0 -> #0:0 (hevc (native) -> h264 (h264_qsv))
+  Stream #0:1 -> #0:1 (eac3 (native) -> aac (libfdk_aac))
+Press [q] to stop, [?] for help
+Output #0, hls, to '/var/lib/jellyfin/transcodes/09c0ffee09deadbeef09cafebabe09f0.m3u8':
+  Metadata:
+    encoder         : Lavf61.1.100
+  Stream #0:0: Video: h264, qsv(tv, bt709, progressive), 1920x1080, q=2-31, 8000 kb/s, 23.98 fps, 90k tbn
+  Stream #0:1: Audio: aac, 48000 Hz, stereo, s16, 256 kb/s
+Impossible to convert between the formats supported by the filter 'Parsed_scale_0' and the filter 'auto_scale_1'
+[fc#0 @ 0x55b0c1d2e3f0] Error reinitializing filters!
+[fc#0 @ 0x55b0c1d2e3f0] Task finished with error code: -38 (Function not implemented)
+[fc#0 @ 0x55b0c1d2e3f0] Terminating thread with return code -38 (Function not implemented)
+Conversion failed!

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jellyfin-transcoding-diag"
+dynamic = ["version"]
+description = "Diagnose Jellyfin transcoding failures: GPU decode capabilities, settings drift, FFmpeg log classification and hw-vs-sw tests."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+dependencies = []
+keywords = ["jellyfin", "ffmpeg", "transcoding", "vaapi", "qsv", "hardware-acceleration"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Multimedia :: Video :: Conversion",
+    "Topic :: System :: Systems Administration",
+]
+
+[project.urls]
+Homepage = "https://github.com/phillipstr/Jellyfin-Transcoding-Diag"
+Issues = "https://github.com/phillipstr/Jellyfin-Transcoding-Diag/issues"
+
+[project.scripts]
+jftd = "jftd.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "jftd.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
