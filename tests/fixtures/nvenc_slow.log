@@ -1,0 +1,18 @@
+/usr/lib/jellyfin-ffmpeg/ffmpeg -analyzeduration 200M -init_hw_device cuda=cu:0 -filter_hw_device cu -hwaccel cuda -hwaccel_output_format cuda -i file:"/media/tv/Example Show/Season 01/Example Show S01E01.mkv" -map 0:0 -map 0:1 -codec:v:0 h264_nvenc -preset p1 -b:v 20000000 -filter_complex "[0:3]scale=1920:1080[sub];[0:0]hwdownload,format=nv12[main];[main][sub]overlay" -codec:a:0 aac -ac 2 -f hls "/config/transcodes/9a8b7c6d.m3u8"
+
+
+ffmpeg version 6.0.1-Jellyfin Copyright (c) 2000-2023 the FFmpeg developers
+Input #0, matroska,webm, from 'file:/media/tv/Example Show/Season 01/Example Show S01E01.mkv':
+  Duration: 00:44:12.34, start: 0.000000, bitrate: 21000 kb/s
+Output #0, hls, to '/config/transcodes/9a8b7c6d.m3u8':
+frame=   12 fps=0.0 q=0.0 size=N/A time=00:00:00.40 bitrate=N/A speed=0.2x
+frame=   30 fps= 18 q=24.0 size=N/A time=00:00:01.20 bitrate=N/A speed=0.45x
+frame=   52 fps= 20 q=24.0 size=N/A time=00:00:02.10 bitrate=N/A speed=0.6x
+frame=   74 fps= 21 q=24.0 size=N/A time=00:00:03.00 bitrate=N/A speed=0.71x
+frame=   96 fps= 21 q=24.0 size=N/A time=00:00:03.90 bitrate=N/A speed=0.72x
+frame=  118 fps= 21 q=24.0 size=N/A time=00:00:04.80 bitrate=N/A speed=0.74x
+frame=  140 fps= 21 q=24.0 size=N/A time=00:00:05.70 bitrate=N/A speed=0.73x
+frame=  162 fps= 21 q=24.0 size=N/A time=00:00:06.60 bitrate=N/A speed=0.75x
+frame=  184 fps= 21 q=24.0 size=N/A time=00:00:07.50 bitrate=N/A speed=0.74x
+[libass @ 0x5620a1b2c3d0] fontselect: failed to find any fallback with glyph 0x3042 for font: (Arial, 400, 0)
+[q] command received, exiting.

@@ -1,0 +1,11 @@
+/usr/lib/jellyfin-ffmpeg/ffmpeg -analyzeduration 200M -i file:"/media/movies/Short Film/Short Film.mp4" -map 0:0 -map 0:1 -codec:v:0 libx264 -preset veryfast -crf 23 -codec:a:0 copy -f hls "/config/transcodes/1234abcd.m3u8"
+
+
+ffmpeg version 7.0.2-Jellyfin Copyright (c) 2000-2024 the FFmpeg developers
+frame=  120 fps=0.0 q=28.0 size=N/A time=00:00:04.00 bitrate=N/A speed=7.8x
+frame=  260 fps=250 q=28.0 size=N/A time=00:00:10.40 bitrate=N/A speed=9.9x
+frame=  410 fps=260 q=28.0 size=N/A time=00:00:16.40 bitrate=N/A speed=10.1x
+frame=  560 fps=262 q=28.0 size=N/A time=00:00:22.40 bitrate=N/A speed=10.2x
+frame=  700 fps=262 q=28.0 size=N/A time=00:00:28.00 bitrate=N/A speed=10.1x
+frame=  850 fps=263 q=28.0 size=N/A time=00:00:34.00 bitrate=N/A speed=10.2x
+Exiting normally, received signal 15.
