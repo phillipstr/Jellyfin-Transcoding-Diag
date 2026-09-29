@@ -1,0 +1,7 @@
+/usr/bin/ffmpeg -analyzeduration 200M -init_hw_device vaapi=va:/dev/dri/renderD128 -init_hw_device opencl=ocl@va -filter_hw_device ocl -hwaccel vaapi -hwaccel_output_format vaapi -i file:"/media/movies/HDR Sample/HDR Sample.mkv" -codec:v:0 hevc_vaapi -vf "hwmap=derive_device=opencl,tonemap_opencl=format=nv12:p=bt709:t=bt709:m=bt709:tonemap=bt2390,hwmap=derive_device=vaapi:reverse=1" -codec:a:0 aac -f hls "/config/transcodes/abcdef.m3u8"
+
+
+ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
+[AVFilterGraph @ 0x5591f0a2b100] No such filter: 'tonemap_opencl'
+Error reinitializing filters!
+Failed to inject frame into filter network: Invalid argument

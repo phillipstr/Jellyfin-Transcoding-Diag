@@ -1,0 +1,12 @@
+{"Protocol":0,"Id":"0f3c2a9e5b1d4c7a8e6f1a2b3c4d5e6f","Path":"/media/movies/Example Movie (2020)/Example Movie (2020).mkv","Type":"Default","Container":"mkv","Size":4294967296,"Name":"Example Movie (2020)"}
+/usr/lib/jellyfin-ffmpeg/ffmpeg -analyzeduration 200M -probesize 1G -init_hw_device vaapi=va:/dev/dri/renderD128 -filter_hw_device va -hwaccel vaapi -hwaccel_output_format vaapi -autorotate 0 -i file:"/media/movies/Example Movie (2020)/Example Movie (2020).mkv" -map_metadata -1 -map_chapters -1 -threads 0 -map 0:0 -map 0:1 -map -0:s -codec:v:0 h264_vaapi -rc_mode VBR -b:v 8000000 -maxrate 8000000 -vf "setparams=color_primaries=bt709,scale_vaapi=format=nv12" -codec:a:0 libfdk_aac -ac 2 -ab 256000 -f hls -hls_time 6 "/config/transcodes/0f3c2a9e5b1d4c7a.m3u8"
+
+
+ffmpeg version 6.0.1-Jellyfin Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 12 (Debian 12.2.0-14)
+  configuration: --prefix=/usr/lib/jellyfin-ffmpeg --target-os=linux --enable-vaapi --enable-opencl
+[AVHWDeviceContext @ 0x55d0c8a1e2c0] libva: vaGetDriverNameByIndex() failed with unknown libva error, driver_name = (null)
+[AVHWDeviceContext @ 0x55d0c8a1e2c0] Failed to initialise VAAPI connection: -1 (unknown libva error).
+Device creation failed: -5.
+Failed to set value 'vaapi=va:/dev/dri/renderD128' for option 'init_hw_device': Input/output error
+Error parsing global options: Input/output error
