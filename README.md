@@ -1,5 +1,12 @@
 # jellyfin-transcode-diag
 
+[![CI](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/phillipstr/Jellyfin-Transcoding-Diag/badge)](https://scorecard.dev/viewer/?uri=github.com/phillipstr/Jellyfin-Transcoding-Diag)
+[![Version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fphillipstr%2FJellyfin-Transcoding-Diag%2Fmain%2Fpyproject.toml&query=%24.project.version&label=version)](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/blob/main/pyproject.toml)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/blob/main/pyproject.toml)
+[![License: MIT](https://img.shields.io/github/license/phillipstr/Jellyfin-Transcoding-Diag)](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/blob/main/LICENSE)
+
 > [!NOTE]
 > AI Info: This project is AI-assisted with Claude. I want to be open about that.
 
@@ -34,6 +41,10 @@ easier by making this little utility. It can do two things:
 ```sh
 pip install git+https://github.com/phillipstr/Jellyfin-Transcoding-Diag
 ```
+
+This installs the `jf-transcode-diag` command and a shorter alias, `jftd`,
+which does exactly the same thing. The examples below use the long name; swap
+in `jftd` if you prefer.
 
 Or run from a checkout without installing:
 
@@ -88,6 +99,27 @@ Input:  /media/movies/Example Movie (2020)/Example Movie (2020).mkv
       'render' or 'video').
     ...
 ```
+
+### Scanning a library
+
+`scan` looks for files likely to fail before anyone plays them. It runs
+ffprobe on every video file under the given directories (jellyfin-ffmpeg's
+ffprobe if installed, otherwise the one on your `PATH`), prints each flagged
+file's full path, and writes the same list to `transcode-scan.csv`.
+
+```sh
+jf-transcode-diag scan /media/movies /media/tv
+jf-transcode-diag scan -o report.json /media          # JSON instead of CSV
+jf-transcode-diag scan --min-severity info /media     # also image subtitles, interlacing
+jf-transcode-diag scan --list-checks
+```
+
+It flags unreadable or corrupt files, Dolby Vision without a fallback layer,
+HDR that needs tone mapping, 10-bit H.264, 4:2:2 and 4:4:4 video, codecs with
+no hardware decoding, and similar. These are predictions from file metadata:
+whether a file actually fails depends on the client and the server's setup.
+Plain `jf-transcode-diag PATH` still reads logs; `jf-transcode-diag log PATH`
+is the same thing.
 
 ### Exit codes
 

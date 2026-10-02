@@ -1,16 +1,29 @@
-"""Command-line entry point: ``jf-transcode-diag``."""
+"""Command-line entry point: ``jf-transcode-diag``, also installed as ``jftd``.
+
+Two modes: ``log`` (the default) diagnoses FFmpeg transcode logs after the fact,
+and ``scan`` probes a media library for files likely to fail to transcode.
+"""
 
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import List, Optional, Sequence
 
 from . import __version__
 from .parser import parse_log
-from .report import Report, render_json, render_text
-from .rules import ALL_RULES, ERROR, diagnose
+from .report import (
+    Report,
+    render_json,
+    render_scan_result,
+    render_scan_summary,
+    render_text,
+    write_scan_report,
+)
+from .rules import ALL_RULES, ERROR, SEVERITY_ORDER, diagnose
+from .scanner import ALL_CHECKS, FfprobeNotFound, find_ffprobe, iter_media_files, scan
 
 EXIT_OK = 0
 EXIT_PROBLEMS = 1
@@ -18,13 +31,27 @@ EXIT_USAGE = 2
 
 TRANSCODE_LOG_GLOB = "FFmpeg.*.log"
 
+PROG = "jf-transcode-diag"
+PROG_NAMES = (PROG, "jftd")
+MODES = ("log", "scan")
+DEFAULT_SCAN_OUTPUT = "transcode-scan.csv"
+
+
+def _prog() -> str:
+    """Name the command the way it was invoked, so ``jftd --help`` says ``jftd``."""
+    name = os.path.splitext(os.path.basename(sys.argv[0]))[0] if sys.argv else ""
+    return name if name in PROG_NAMES else PROG
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="jf-transcode-diag",
+        prog=_prog(),
+        usage="%(prog)s [log] [options] [PATH ...]\n       %(prog)s scan [options] PATH [PATH ...]",
         description=(
             "Diagnose failed or struggling Jellyfin transcodes. Point it at an "
-            "FFmpeg.Transcode-*.log file, at Jellyfin's log directory, or pipe a log in."
+            "FFmpeg.Transcode-*.log file, at Jellyfin's log directory, or pipe a log in. "
+            "Run '%(prog)s scan --help' to check a media library for files likely to fail "
+            "before anyone plays them."
         ),
     )
     parser.add_argument(
@@ -67,12 +94,70 @@ def _collect(paths: Sequence[str], latest: int) -> List[Path]:
     return files
 
 
+def build_scan_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog=f"{_prog()} scan",
+        description=(
+            "Probe media files with ffprobe and list the ones likely to fail or struggle "
+            "to transcode, with their full paths. Findings are predictions from file "
+            "metadata, not observed failures. Requires ffprobe (jellyfin-ffmpeg's is "
+            "used when installed)."
+        ),
+    )
+    parser.add_argument(
+        "paths",
+        nargs="*",
+        metavar="PATH",
+        help="media file, or library directory to search recursively",
+    )
+    parser.add_argument(
+        "-o", "--output",
+        default=DEFAULT_SCAN_OUTPUT,
+        metavar="FILE",
+        help=f"write findings here as CSV, or JSON if FILE ends in .json (default: {DEFAULT_SCAN_OUTPUT})",
+    )
+    parser.add_argument("--no-output", action="store_true", help="only print to the terminal")
+    parser.add_argument(
+        "--min-severity",
+        choices=sorted(SEVERITY_ORDER, key=SEVERITY_ORDER.__getitem__),
+        default="warning",
+        help="lowest severity to report (default: warning; 'info' adds notes "
+             "such as image subtitles and interlacing)",
+    )
+    parser.add_argument("--ffprobe", metavar="PATH", help="ffprobe to run (default: auto-detect)")
+    parser.add_argument(
+        "-j", "--jobs",
+        type=int,
+        default=4,
+        metavar="N",
+        help="files to probe at once (default: 4)",
+    )
+    parser.add_argument("--list-checks", action="store_true", help="list the checks and exit")
+    return parser
+
+
 def _list_rules() -> str:
     width = max(len(rule.id) for rule in ALL_RULES)
     return "\n".join(f"{rule.id:<{width}}  {rule.severity:<7}  {rule.title}" for rule in ALL_RULES) + "\n"
 
 
+def _list_checks() -> str:
+    width = max(len(check.id) for check in ALL_CHECKS)
+    return "\n".join(
+        f"{check.id:<{width}}  {check.severity:<7}  {check.title}" for check in ALL_CHECKS
+    ) + "\n"
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] == "scan":
+        return scan_main(argv[1:])
+    if argv and argv[0] == "log":
+        argv = argv[1:]
+    return log_main(argv)
+
+
+def log_main(argv: Sequence[str]) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
@@ -86,7 +171,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not paths:
         if sys.stdin.isatty():
             parser.print_usage(sys.stderr)
-            sys.stderr.write("jf-transcode-diag: give a log file or directory, or pipe a log in\n")
+            sys.stderr.write(f"{parser.prog}: give a log file or directory, or pipe a log in\n")
             return EXIT_USAGE
         paths = ["-"]
 
@@ -99,11 +184,67 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             log = parse_log(path.read_text(encoding="utf-8", errors="replace"), source=str(path))
             reports.append((log, diagnose(log)))
     except OSError as error:
-        sys.stderr.write(f"jf-transcode-diag: {error}\n")
+        sys.stderr.write(f"{parser.prog}: {error}\n")
         return EXIT_USAGE
 
     render = render_json if args.json else render_text
     sys.stdout.write(render(reports, redact_output=args.redact))
 
     has_errors = any(f.rule.severity == ERROR for _, findings in reports for f in findings)
+    return EXIT_PROBLEMS if has_errors else EXIT_OK
+
+
+def scan_main(argv: Sequence[str]) -> int:
+    parser = build_scan_parser()
+    args = parser.parse_args(argv)
+
+    if args.list_checks:
+        sys.stdout.write(_list_checks())
+        return EXIT_OK
+    if not args.paths:
+        parser.error("give a media file or library directory to scan")
+    if args.jobs < 1:
+        parser.error("--jobs must be at least 1")
+
+    try:
+        ffprobe = find_ffprobe(args.ffprobe)
+        files = list(iter_media_files(args.paths))
+    except (FfprobeNotFound, OSError) as error:
+        sys.stderr.write(f"{parser.prog}: {error}\n")
+        return EXIT_USAGE
+
+    progress = sys.stderr.isatty()
+    done = 0
+
+    def show(result) -> None:
+        nonlocal done
+        done += 1
+        if progress:
+            sys.stderr.write("\r\033[K")
+        text = render_scan_result(result, args.min_severity)
+        if text:
+            sys.stdout.write(text)
+            sys.stdout.flush()
+        if progress:
+            sys.stderr.write(f"Scanned {done}/{len(files)}")
+            sys.stderr.flush()
+
+    results = scan(files, ffprobe, jobs=args.jobs, on_result=show)
+    if progress:
+        sys.stderr.write("\r\033[K")
+
+    if any(render_scan_result(r, args.min_severity) for r in results):
+        sys.stdout.write("\n")
+    sys.stdout.write(render_scan_summary(results, args.min_severity))
+
+    if not args.no_output:
+        output = Path(args.output)
+        try:
+            rows = write_scan_report(results, output, args.min_severity)
+        except OSError as error:
+            sys.stderr.write(f"{parser.prog}: could not write {output}: {error}\n")
+            return EXIT_USAGE
+        sys.stdout.write(f"Wrote {rows} finding{'s' if rows != 1 else ''} to {output}\n")
+
+    has_errors = any(f.check.severity == ERROR for r in results for f in r.findings)
     return EXIT_PROBLEMS if has_errors else EXIT_OK

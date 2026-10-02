@@ -21,6 +21,7 @@ Homepage = "https://github.com/phillipstr/Jellyfin-Transcoding-Diag"
 
 [project.scripts]
 jf-transcode-diag = "jellyfin_transcode_diag.cli:main"
+jftd = "jellyfin_transcode_diag.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
