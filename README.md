@@ -77,6 +77,9 @@ jf-transcode-diag --json /config/log
 Where Jellyfin keeps its logs depends on how it was installed. Common places
 are `/var/log/jellyfin` (Debian and Ubuntu packages), `/config/log` (the
 official Docker image) and `%ProgramData%\Jellyfin\Server\log` (Windows).
+Run it with no `PATH` and it looks for them itself, including custom locations
+set with `JELLYFIN_LOG_DIR` or `JELLYFIN_DATA_DIR`; if Jellyfin lives somewhere
+unusual, add `--jellyfin-dir DIR`. `scan` finds Jellyfin's own ffprobe the same way.
 
 Example output:
 
