@@ -1,5 +1,12 @@
 # jellyfin-transcode-diag
 
+[![CI](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/phillipstr/Jellyfin-Transcoding-Diag/badge)](https://scorecard.dev/viewer/?uri=github.com/phillipstr/Jellyfin-Transcoding-Diag)
+[![Version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fphillipstr%2FJellyfin-Transcoding-Diag%2Fmain%2Fpyproject.toml&query=%24.project.version&label=version)](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/blob/main/pyproject.toml)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/blob/main/pyproject.toml)
+[![License: MIT](https://img.shields.io/github/license/phillipstr/Jellyfin-Transcoding-Diag)](https://github.com/phillipstr/Jellyfin-Transcoding-Diag/blob/main/LICENSE)
+
 A small command-line tool that reads Jellyfin's FFmpeg transcode logs and tells
 you, in plain language, why a transcode failed or struggled and what to try next.
 
