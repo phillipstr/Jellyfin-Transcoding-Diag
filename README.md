@@ -1,5 +1,8 @@
 # jellyfin-transcode-diag
 
+> [!NOTE]
+> AI Info: This project is AI-assisted with Claude. I want to be open about that.
+
 A small command-line tool that reads Jellyfin's FFmpeg transcode logs and tells
 you, in plain language, why a transcode failed or struggled and what to try next.
 
@@ -9,6 +12,20 @@ client, while the real cause sits a few hundred lines into an
 the problem, and points at the setting or package to check.
 
 It has no dependencies beyond Python 3.9+ and never contacts the network.
+
+## Why Does This Exist?
+
+I have recently begun migrating from Plex to Jellyfin, and admittedly, my
+hardware (ThinkCentre M700) isn't the best. I just have an Intel iGPU so
+sometimes Jellyfin will fail when attempting to transcode things. When that
+happens, the Jellyfin UI will simply display a media playback error without
+much else.
+
+So I set off to figure out how I can make my self-hosting life a little
+easier by making this little utility. It can do two things:
+
+1. Checks log files for failed transcodes
+1. Crawls a library to find media files that *might* fail a transcode
 
 ## Install
 
