@@ -16,6 +16,10 @@ It has no dependencies beyond Python 3.9+ and never contacts the network.
 pip install git+https://github.com/phillipstr/Jellyfin-Transcoding-Diag
 ```
 
+This installs the `jf-transcode-diag` command and a shorter alias, `jftd`,
+which does exactly the same thing. The examples below use the long name; swap
+in `jftd` if you prefer.
+
 Or run from a checkout without installing:
 
 ```sh

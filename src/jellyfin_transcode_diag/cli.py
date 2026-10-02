@@ -1,8 +1,9 @@
-"""Command-line entry point: ``jf-transcode-diag``."""
+"""Command-line entry point: ``jf-transcode-diag``, also installed as ``jftd``."""
 
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import List, Optional, Sequence
@@ -18,10 +19,19 @@ EXIT_USAGE = 2
 
 TRANSCODE_LOG_GLOB = "FFmpeg.*.log"
 
+PROG = "jf-transcode-diag"
+PROG_NAMES = (PROG, "jftd")
+
+
+def _prog() -> str:
+    """Name the command the way it was invoked, so ``jftd --help`` says ``jftd``."""
+    name = os.path.splitext(os.path.basename(sys.argv[0]))[0] if sys.argv else ""
+    return name if name in PROG_NAMES else PROG
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="jf-transcode-diag",
+        prog=_prog(),
         description=(
             "Diagnose failed or struggling Jellyfin transcodes. Point it at an "
             "FFmpeg.Transcode-*.log file, at Jellyfin's log directory, or pipe a log in."
@@ -86,7 +96,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not paths:
         if sys.stdin.isatty():
             parser.print_usage(sys.stderr)
-            sys.stderr.write("jf-transcode-diag: give a log file or directory, or pipe a log in\n")
+            sys.stderr.write(f"{parser.prog}: give a log file or directory, or pipe a log in\n")
             return EXIT_USAGE
         paths = ["-"]
 
@@ -99,7 +109,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             log = parse_log(path.read_text(encoding="utf-8", errors="replace"), source=str(path))
             reports.append((log, diagnose(log)))
     except OSError as error:
-        sys.stderr.write(f"jf-transcode-diag: {error}\n")
+        sys.stderr.write(f"{parser.prog}: {error}\n")
         return EXIT_USAGE
 
     render = render_json if args.json else render_text

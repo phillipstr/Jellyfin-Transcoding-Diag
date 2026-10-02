@@ -91,3 +91,16 @@ def test_list_rules(capsys):
 
     assert code == EXIT_OK
     assert "hwaccel-init" in out and "slow-transcode" in out
+
+
+def test_prog_name_follows_invoked_command(monkeypatch):
+    from jellyfin_transcode_diag.cli import build_parser
+
+    monkeypatch.setattr("sys.argv", ["/usr/local/bin/jftd"])
+    assert build_parser().prog == "jftd"
+
+    monkeypatch.setattr("sys.argv", ["/usr/local/bin/jf-transcode-diag"])
+    assert build_parser().prog == "jf-transcode-diag"
+
+    monkeypatch.setattr("sys.argv", ["/path/to/__main__.py"])
+    assert build_parser().prog == "jf-transcode-diag"
