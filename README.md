@@ -74,6 +74,27 @@ Input:  /media/movies/Example Movie (2020)/Example Movie (2020).mkv
     ...
 ```
 
+### Scanning a library
+
+`scan` looks for files likely to fail before anyone plays them. It runs
+ffprobe on every video file under the given directories (jellyfin-ffmpeg's
+ffprobe if installed, otherwise the one on your `PATH`), prints each flagged
+file's full path, and writes the same list to `transcode-scan.csv`.
+
+```sh
+jf-transcode-diag scan /media/movies /media/tv
+jf-transcode-diag scan -o report.json /media          # JSON instead of CSV
+jf-transcode-diag scan --min-severity info /media     # also image subtitles, interlacing
+jf-transcode-diag scan --list-checks
+```
+
+It flags unreadable or corrupt files, Dolby Vision without a fallback layer,
+HDR that needs tone mapping, 10-bit H.264, 4:2:2 and 4:4:4 video, codecs with
+no hardware decoding, and similar. These are predictions from file metadata:
+whether a file actually fails depends on the client and the server's setup.
+Plain `jf-transcode-diag PATH` still reads logs; `jf-transcode-diag log PATH`
+is the same thing.
+
 ### Exit codes
 
 | Code | Meaning |

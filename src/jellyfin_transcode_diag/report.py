@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import re
 import textwrap
+from pathlib import Path
 from statistics import median
-from typing import Callable, Iterable, List, Tuple
+from typing import Callable, Dict, Iterable, List, Tuple
 
 from .parser import TranscodeLog
-from .rules import Finding
+from .rules import ERROR, INFO, SEVERITY_ORDER, WARNING, Finding
+from .scanner import ScanResult
 
 # Quoted strings that start with an absolute path, e.g. from 'file:/media/a b.mkv'.
 _QUOTED_PATH_RE = re.compile(r"(['\"])(?:file:)?(?:/(?!dev/)|[A-Za-z]:\\)[^'\"]*\1")
@@ -129,3 +132,70 @@ def render_json(reports: List[Report], redact_output: bool = False) -> str:
             ],
         })
     return json.dumps(payload, indent=2) + "\n"
+
+
+SCAN_DISCLAIMER = (
+    "Scan findings are predictions from file metadata, not observed failures. Whether a "
+    "file transcodes depends on the client, the server's hardware acceleration and "
+    "Jellyfin's settings."
+)
+SCAN_CSV_FIELDS = ("path", "severity", "check", "title", "detail")
+
+
+def scan_rows(results: List[ScanResult], min_severity: str) -> List[Dict[str, str]]:
+    """Flatten scan results into one row per finding at or above ``min_severity``."""
+    limit = SEVERITY_ORDER[min_severity]
+    return [
+        {
+            "path": str(result.path),
+            "severity": finding.check.severity,
+            "check": finding.check.id,
+            "title": finding.check.title,
+            "detail": finding.detail,
+        }
+        for result in results
+        for finding in result.findings
+        if SEVERITY_ORDER[finding.check.severity] <= limit
+    ]
+
+
+def render_scan_result(result: ScanResult, min_severity: str) -> str:
+    """One file's findings for the terminal, or an empty string if nothing qualifies."""
+    rows = scan_rows([result], min_severity)
+    if not rows:
+        return ""
+    out = [str(result.path)]
+    for row in rows:
+        out.append(f"  [{row['severity'].upper()}] {row['title']} ({row['check']})")
+        if row["detail"]:
+            out.append(f"    {row['detail']}")
+    return "\n".join(out) + "\n"
+
+
+def render_scan_summary(results: List[ScanResult], min_severity: str) -> str:
+    counts = {severity: 0 for severity in SEVERITY_ORDER}
+    for result in results:
+        if result.worst:
+            counts[result.worst] += 1
+    flagged = len({row["path"] for row in scan_rows(results, min_severity)})
+    lines = [
+        f"Scanned {len(results)} file{'s' if len(results) != 1 else ''}: "
+        f"{counts[ERROR]} likely to fail, {counts[WARNING]} may fail or struggle, "
+        f"{counts[INFO]} with notes only. {flagged} reported.",
+    ]
+    lines.extend(textwrap.wrap(SCAN_DISCLAIMER, width=88))
+    return "\n".join(lines) + "\n"
+
+
+def write_scan_report(results: List[ScanResult], path: Path, min_severity: str) -> int:
+    """Write findings to ``path`` as CSV, or JSON if it ends in .json. Returns the row count."""
+    rows = scan_rows(results, min_severity)
+    if path.suffix.lower() == ".json":
+        payload = {"note": SCAN_DISCLAIMER, "scanned": len(results), "findings": rows}
+        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    else:
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=SCAN_CSV_FIELDS)
+            writer.writeheader()
+            writer.writerows(rows)
+    return len(rows)

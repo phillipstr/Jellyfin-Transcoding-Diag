@@ -25,3 +25,4 @@ jobs:
       - run: python -m pytest -q
       - run: jf-transcode-diag --list-rules
       - run: jftd --version
+      - run: jftd scan --list-checks
