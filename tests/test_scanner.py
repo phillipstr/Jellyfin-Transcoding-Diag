@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from jellyfin_transcode_diag import cli, scanner
+from jellyfin_transcode_diag import cli, locations, scanner
 from jellyfin_transcode_diag.cli import EXIT_OK, EXIT_PROBLEMS, EXIT_USAGE, main
+from jellyfin_transcode_diag.locations import Candidate
 from jellyfin_transcode_diag.scanner import Probe, analyze, iter_media_files
 
 H264 = {"index": 0, "codec_type": "video", "codec_name": "h264", "profile": "High",
@@ -119,7 +120,8 @@ def fake_library(tmp_path, monkeypatch):
         "subs.mkv": probe(H264, AAC, {"index": 2, "codec_type": "subtitle",
                                       "codec_name": "dvd_subtitle"}),
     }
-    monkeypatch.setattr(cli, "find_ffprobe", lambda explicit=None: "ffprobe")
+    monkeypatch.setattr(cli, "find_ffprobe",
+                        lambda explicit=None, jellyfin_dir=None: Candidate("ffprobe", "test"))
     monkeypatch.setattr(scanner, "run_ffprobe", lambda ffprobe, path: probes[path.name])
     monkeypatch.chdir(tmp_path)
     return library
@@ -156,8 +158,8 @@ def test_scan_cli_no_output(fake_library, capsys):
 
 
 def test_scan_cli_errors(tmp_path, monkeypatch, capsys):
-    monkeypatch.setattr(scanner.shutil, "which", lambda name: None)
-    monkeypatch.setattr(scanner, "JELLYFIN_FFPROBE_PATHS", ())
+    monkeypatch.setattr(locations.shutil, "which", lambda name: None)
+    monkeypatch.setattr(locations, "ffprobe_candidates", lambda *args: [])
     assert main(["scan", str(tmp_path)]) == EXIT_USAGE
     assert "ffprobe not found" in capsys.readouterr().err
 

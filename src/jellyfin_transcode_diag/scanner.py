@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
@@ -24,12 +23,6 @@ MEDIA_EXTENSIONS = frozenset({
     ".m4v", ".mk3d", ".mkv", ".mov", ".mp4", ".mpeg", ".mpg", ".mts", ".ogm",
     ".ogv", ".rm", ".rmvb", ".ts", ".vob", ".webm", ".wmv", ".wtv", ".xvid",
 })
-
-# jellyfin-ffmpeg's ffprobe is preferred: it is what Jellyfin itself uses.
-JELLYFIN_FFPROBE_PATHS = (
-    "/usr/lib/jellyfin-ffmpeg/ffprobe",
-    "/usr/share/jellyfin-ffmpeg/ffprobe",
-)
 
 PROBE_TIMEOUT = 60
 
@@ -91,28 +84,6 @@ ALL_CHECKS = (
     H264_HIGH_BIT_DEPTH, CHROMA, SOFTWARE_DECODE, NEWER_CODEC, LARGE_FRAME,
     INTERLACED, IMAGE_SUBTITLES, NO_DURATION,
 )
-
-
-class FfprobeNotFound(Exception):
-    pass
-
-
-def find_ffprobe(explicit: Optional[str] = None) -> str:
-    """Return an ffprobe to run, preferring jellyfin-ffmpeg's, or raise FfprobeNotFound."""
-    if explicit:
-        found = shutil.which(explicit)
-        if not found:
-            raise FfprobeNotFound(f"ffprobe not found at {explicit}")
-        return found
-    for candidate in JELLYFIN_FFPROBE_PATHS:
-        if os.access(candidate, os.X_OK):
-            return candidate
-    found = shutil.which("ffprobe")
-    if not found:
-        raise FfprobeNotFound(
-            "ffprobe not found. Install FFmpeg (or jellyfin-ffmpeg) or pass --ffprobe PATH"
-        )
-    return found
 
 
 def iter_media_files(paths: Sequence[str]) -> Iterator[Path]:

@@ -23,13 +23,12 @@ from .report import (
     write_scan_report,
 )
 from .rules import ALL_RULES, ERROR, SEVERITY_ORDER, diagnose
-from .scanner import ALL_CHECKS, FfprobeNotFound, find_ffprobe, iter_media_files, scan
+from .locations import TRANSCODE_LOG_GLOB, FfprobeNotFound, LogDirNotFound, find_ffprobe, find_log_dir
+from .scanner import ALL_CHECKS, iter_media_files, scan
 
 EXIT_OK = 0
 EXIT_PROBLEMS = 1
 EXIT_USAGE = 2
-
-TRANSCODE_LOG_GLOB = "FFmpeg.*.log"
 
 PROG = "jf-transcode-diag"
 PROG_NAMES = (PROG, "jftd")
@@ -50,6 +49,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Diagnose failed or struggling Jellyfin transcodes. Point it at an "
             "FFmpeg.Transcode-*.log file, at Jellyfin's log directory, or pipe a log in. "
+            "With no PATH it looks for Jellyfin's log directory itself. "
             "Run '%(prog)s scan --help' to check a media library for files likely to fail "
             "before anyone plays them."
         ),
@@ -58,8 +58,10 @@ def build_parser() -> argparse.ArgumentParser:
         "paths",
         nargs="*",
         metavar="PATH",
-        help="log file, or directory containing FFmpeg.*.log files; '-' reads stdin",
+        help="log file, or directory containing FFmpeg.*.log files; '-' reads stdin "
+             "(default: find Jellyfin's log directory)",
     )
+    _add_jellyfin_dir(parser)
     parser.add_argument(
         "-n", "--latest",
         type=int,
@@ -76,6 +78,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--list-rules", action="store_true", help="list known problems and exit")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
+
+
+def _add_jellyfin_dir(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--jellyfin-dir",
+        metavar="DIR",
+        help="Jellyfin's data, config or install folder, when it is not in a standard "
+             "place (JELLYFIN_LOG_DIR, JELLYFIN_DATA_DIR, JELLYFIN_CONFIG_DIR and "
+             "JELLYFIN_FFMPEG are also read)",
+    )
 
 
 def _collect(paths: Sequence[str], latest: int) -> List[Path]:
@@ -124,7 +136,13 @@ def build_scan_parser() -> argparse.ArgumentParser:
         help="lowest severity to report (default: warning; 'info' adds notes "
              "such as image subtitles and interlacing)",
     )
-    parser.add_argument("--ffprobe", metavar="PATH", help="ffprobe to run (default: auto-detect)")
+    parser.add_argument(
+        "--ffprobe",
+        metavar="PATH",
+        help="ffprobe to run, or the folder holding it (default: the one Jellyfin uses, "
+             "else the one on PATH)",
+    )
+    _add_jellyfin_dir(parser)
     parser.add_argument(
         "-j", "--jobs",
         type=int,
@@ -169,11 +187,16 @@ def log_main(argv: Sequence[str]) -> int:
 
     paths = list(args.paths)
     if not paths:
-        if sys.stdin.isatty():
-            parser.print_usage(sys.stderr)
-            sys.stderr.write(f"{parser.prog}: give a log file or directory, or pipe a log in\n")
-            return EXIT_USAGE
-        paths = ["-"]
+        if args.jellyfin_dir or sys.stdin.isatty():
+            try:
+                log_dir = find_log_dir(args.jellyfin_dir)
+            except LogDirNotFound as error:
+                sys.stderr.write(f"{parser.prog}: {error}\n")
+                return EXIT_USAGE
+            sys.stderr.write(f"Reading logs in {log_dir.path} (from {log_dir.source})\n")
+            paths = [log_dir.path]
+        else:
+            paths = ["-"]
 
     reports: List[Report] = []
     try:
@@ -207,11 +230,13 @@ def scan_main(argv: Sequence[str]) -> int:
         parser.error("--jobs must be at least 1")
 
     try:
-        ffprobe = find_ffprobe(args.ffprobe)
+        found = find_ffprobe(args.ffprobe, args.jellyfin_dir)
         files = list(iter_media_files(args.paths))
     except (FfprobeNotFound, OSError) as error:
         sys.stderr.write(f"{parser.prog}: {error}\n")
         return EXIT_USAGE
+    ffprobe = found.path
+    sys.stderr.write(f"Using {ffprobe} (from {found.source})\n")
 
     progress = sys.stderr.isatty()
     done = 0
