@@ -19,7 +19,9 @@ I have recently begun migrating from Plex to Jellyfin, and admittedly, my
 hardware (ThinkCentre M700) isn't the best. I just have an Intel iGPU so
 sometimes Jellyfin will fail when attempting to transcode things. When that
 happens, the Jellyfin UI will simply display a media playback error without
-much else.
+much else. In my library, if I have one file fail, then I'll most likely
+also have others (i.e. episodes in a season), and finding those to fix
+can be a little time consuming.
 
 So I set off to figure out how I can make my self-hosting life a little
 easier by making this little utility. It can do two things:
