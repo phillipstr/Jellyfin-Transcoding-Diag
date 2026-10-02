@@ -69,13 +69,14 @@ jobs:
 
   pypi:
     name: Publish to PyPI
-    # Opt in by setting the repository variable PUBLISH_TO_PYPI=true after
-    # registering this workflow as a trusted publisher on PyPI.
-    if: vars.PUBLISH_TO_PYPI == 'true'
+    # Uses PyPI Trusted Publishing (OIDC), so no API token is stored here.
+    # PyPI must list this repository, release.yml and the "pypi" environment
+    # as a trusted publisher for the jellyfin-transcode-diag project.
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: pypi
+      url: https://pypi.org/p/jellyfin-transcode-diag
     permissions:
       id-token: write
     steps:
