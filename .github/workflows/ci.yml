@@ -24,3 +24,4 @@ jobs:
       - run: python -m pip install . pytest
       - run: python -m pytest -q
       - run: jf-transcode-diag --list-rules
+      - run: jftd --version
